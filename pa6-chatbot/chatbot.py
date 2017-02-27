@@ -25,6 +25,7 @@ class Chatbot:
       self.name = 'moviebot'
       self.is_turbo = is_turbo
       self.read_data()
+      self.userVector = [0] * len(self.ratings[0])
 
     #############################################################################
     # 1. WARM UP REPL
@@ -82,6 +83,10 @@ class Chatbot:
         movie = m.group(1)
         response += '\nDiscovered movie: %s' % movie
         sentimentScore = self.scoreSentiment(input)
+        if movie in self.titleIndex:
+          self.userVector[self.titleIndex[movie]] = sentimentScore
+          response += '\nMovie preference added to vector'
+        print(self.recommend(self.userVector)[:3])
         if sentimentScore > 0.5:
           response += '\nYou liked "%s". Thank you!' % movie
         elif sentimentScore < -0.5:
@@ -119,6 +124,8 @@ class Chatbot:
       self.titles, self.ratings = ratings()
       reader = csv.reader(open('data/sentiment.txt', 'rb'))
       self.sentiment = dict(reader)
+      self.titleIndex = {self.titles[i][0]: i for i in range(len(self.titles))}
+
 
 
     def binarize(self):
@@ -140,17 +147,27 @@ class Chatbot:
       """Calculates a given distance function between vectors u and v"""
       # TODO: Implement the distance function between vectors u and v]
       # Note: you can also think of this as computing a similarity measure
-
-      pass
-
+      dotProduct = 0
+      for a,b in zip(u,v):
+        dotProduct += a * b
+      return dotProduct
 
     def recommend(self, u):
       """Generates a list of movies based on the input vector u using
       collaborative filtering"""
       # TODO: Implement a recommendation function that takes a user vector u
       # and outputs a list of movies recommended by the chatbot
-
-      pass
+      bestSimilarity = -1
+      bestUser = 0
+      for i in range(len(self.ratings)):
+        user = self.ratings[i]
+        similarity = self.distance(u, user)
+        if similarity > bestSimilarity:
+          bestSimilarity = similarity
+          bestUser = i
+      recommendations = [self.ratings[bestUser] for i in range(len(u)) if u[i] == 0]
+      recommendations = sorted(recommendations, reverse=True)
+      return recommendations
 
 
     #############################################################################
