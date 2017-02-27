@@ -14,6 +14,7 @@ import re
 
 from movielens import ratings
 from random import randint
+from PorterStemmer import PorterStemmer
 
 class Chatbot:
     """Simple class to implement the chatbot for PA 6."""
@@ -26,6 +27,8 @@ class Chatbot:
       self.is_turbo = is_turbo
       self.read_data()
       self.userVector = [0] * len(self.ratings[0])
+      self.stemmer = PorterStemmer()
+      self.alphanum = re.compile('[^a-zA-Z0-9]')
 
     #############################################################################
     # 1. WARM UP REPL
@@ -75,24 +78,38 @@ class Chatbot:
       # calling other functions. Although modular code is not graded, it is       #
       # highly recommended                                                        #
       #############################################################################
+      # make sure everything is lower case
+      movies = re.finditer('"([^"]*)"', input)
+      input = re.sub('"([^"]*)"', '', input)
+      input = input.lower()
+      # split on whitespace
+      input = [xx.strip() for xx in input.split()]
+      # remove non alphanumeric characters
+      input = [self.alphanum.sub('', xx) for xx in input]
+      # remove any words that are now empty
+      input = [xx for xx in input if xx != '']
+      # stem words
+      input = [self.stemmer.stem(xx) for xx in input]
+      input = ' '.join(input)
+      print input
       if self.is_turbo == True:
         response = 'processed %s in creative mode!!' % input
       else:
         response = 'processed %s in starter mode' % input
-      for m in re.finditer('"([^"]*)"', input):
+      for m in movies:
         movie = m.group(1)
         response += '\nDiscovered movie: %s' % movie
         sentimentScore = self.scoreSentiment(input)
         if movie in self.titleIndex:
           self.userVector[self.titleIndex[movie]] = sentimentScore
           response += '\nMovie preference added to vector'
-        print(self.recommend(self.userVector)[:3])
+        #print(self.recommend(self.userVector)[:3])
         if sentimentScore > 0.5:
           response += '\nYou liked "%s". Thank you!' % movie
         elif sentimentScore < -0.5:
           response += '\nYou did not like "%s". Thank you!' % movie
         else:
-          response += 'I\'m sorry, I\'m not quite sure if you liked "%s". Tell me more about "%s".' % (movie, movie)
+          response += '\nI\'m sorry, I\'m not quite sure if you liked "%s". Tell me more about "%s".' % (movie, movie)
           return response
       return response + '\nTell me about another movie you have seen.'
 
