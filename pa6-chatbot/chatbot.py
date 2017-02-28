@@ -25,10 +25,13 @@ class Chatbot:
     def __init__(self, is_turbo=False):
       self.name = 'moviebot'
       self.is_turbo = is_turbo
+      with open('deps/articles') as f:
+        self.articles = set([line.strip() for line in f])
       self.read_data()
       self.userVector = [0] * len(self.ratings[0])
       self.stemmer = PorterStemmer()
       self.alphanum = re.compile('[^a-zA-Z0-9]')
+
 
     #############################################################################
     # 1. WARM UP REPL
@@ -79,7 +82,7 @@ class Chatbot:
       # highly recommended                                                        #
       #############################################################################
       # make sure everything is lower case
-      movies = re.finditer('"([^"]*)"', input)
+      movies = re.finditer('"([^"]*)"', input.lower())
       input = re.sub('"([^"]*)"', '', input)
       input = input.lower()
       # split on whitespace
@@ -96,8 +99,9 @@ class Chatbot:
         response = 'processed %s in creative mode!!' % input
       else:
         response = 'processed %s in starter mode' % input
+
       for m in movies:
-        movie = m.group(1)
+        movie = self.remove_articles(m.group(1))
         response += '\nDiscovered movie: %s' % movie
         sentimentScore = self.scoreSentiment(input)
         if movie in self.titleIndex:
@@ -132,6 +136,17 @@ class Chatbot:
       if total == 0: return 0
       return float(score) / total
 
+    def remove_articles(self, title):
+      tokens = [w.strip() for w in title.split() if w.strip() != '']
+      if len(tokens) == 0: return title
+      if tokens[0] in self.articles:
+        del tokens[0]
+      if len(tokens) > 0 and tokens[-1] in self.articles:
+        del tokens[-1]
+        if len(tokens) > 0 and tokens[-1].endswith(','):
+          tokens[-1] = tokens[-1][:-1]
+      return ' '.join([w for w in tokens])
+
 
     def read_data(self):
       """Reads the ratings matrix from file"""
@@ -142,6 +157,14 @@ class Chatbot:
       reader = csv.reader(open('data/sentiment.txt', 'rb'))
       self.sentiment = dict(reader)
       self.titleIndex = {self.titles[i][0]: i for i in range(len(self.titles))}
+      for i in range(len(self.titles)):
+        rawTitle = re.sub(r'(.*) \([0-9]*\)', r'\1', self.titles[i][0]).lower()
+        for m in re.finditer(r'\(([^()]*)\)', rawTitle):
+          altTitle = self.remove_articles(m.group(1))
+          self.titleIndex[altTitle] = i
+        primaryTitle = self.remove_articles(re.sub(r'\([^()]*\)', '', rawTitle).rstrip())
+        self.titleIndex[primaryTitle] = i
+        
 
 
 
