@@ -14,6 +14,7 @@ import re
 
 from movielens import ratings
 from random import randint
+from PorterStemmer import PorterStemmer
 
 class Chatbot:
     """Simple class to implement the chatbot for PA 6."""
@@ -28,6 +29,8 @@ class Chatbot:
         self.articles = set([line.strip() for line in f])
       self.read_data()
       self.userVector = [0] * len(self.ratings[0])
+      self.stemmer = PorterStemmer()
+      self.alphanum = re.compile('[^a-zA-Z0-9]')
 
 
     #############################################################################
@@ -78,12 +81,25 @@ class Chatbot:
       # calling other functions. Although modular code is not graded, it is       #
       # highly recommended                                                        #
       #############################################################################
+      # make sure everything is lower case
+      movies = re.finditer('"([^"]*)"', input)
+      input = re.sub('"([^"]*)"', '', input)
+      input = input.lower()
+      # split on whitespace
+      input = [xx.strip() for xx in input.split()]
+      # remove non alphanumeric characters
+      input = [self.alphanum.sub('', xx) for xx in input]
+      # remove any words that are now empty
+      input = [xx for xx in input if xx != '']
+      # stem words
+      input = [self.stemmer.stem(xx) for xx in input]
+      input = ' '.join(input)
+      print input
       if self.is_turbo == True:
         response = 'processed %s in creative mode!!' % input
       else:
         response = 'processed %s in starter mode' % input
 
-      input = input.lower()
       for m in re.finditer('"([^"]*)"', input):
         movie = self.remove_articles(m.group(1))
         response += '\nDiscovered movie: %s' % movie
