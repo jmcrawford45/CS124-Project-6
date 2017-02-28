@@ -125,6 +125,14 @@ class Chatbot:
       reader = csv.reader(open('data/sentiment.txt', 'rb'))
       self.sentiment = dict(reader)
       self.titleIndex = {self.titles[i][0]: i for i in range(len(self.titles))}
+      for i in range(len(self.titles)):
+        rawTitle = re.sub(r'(.*) \([0-9]*\)', r'\1', self.titles[i][0])
+        for m in re.finditer(r'\(([^()]*)\)', rawTitle):
+          altTitle = m.group(1)
+          self.titleIndex[altTitle] = i
+        primaryTitle = re.sub(r'\([^()]*\)', '', rawTitle).rstrip()
+        self.titleIndex[primaryTitle] = i
+        
 
 
 
