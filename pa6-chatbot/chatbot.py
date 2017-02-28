@@ -82,7 +82,7 @@ class Chatbot:
       # highly recommended                                                        #
       #############################################################################
       # make sure everything is lower case
-      movies = re.finditer('"([^"]*)"', input)
+      movies = re.finditer('"([^"]*)"', input.lower())
       input = re.sub('"([^"]*)"', '', input)
       input = input.lower()
       # split on whitespace
@@ -100,7 +100,7 @@ class Chatbot:
       else:
         response = 'processed %s in starter mode' % input
 
-      for m in re.finditer('"([^"]*)"', input):
+      for m in movies:
         movie = self.remove_articles(m.group(1))
         response += '\nDiscovered movie: %s' % movie
         sentimentScore = self.scoreSentiment(input)
