@@ -31,6 +31,10 @@ class Chatbot:
       self.read_data()
       self.userVector = [0] * len(self.ratings)
       self.stemmer = PorterStemmer()
+      with open('deps/posWords') as f, open('deps/negWords') as f2, open('deps/intensifiers') as f3:
+        self.posWords = set([self.stemmer.stem(line.strip()) for line in f])
+        self.negWords = set([self.stemmer.stem(line.strip()) for line in f2])
+        self.intensifiers = set([self.stemmer.stem(line.strip()) for line in f3])
       self.alphanum = re.compile('[^a-zA-Z0-9]')
 
 
@@ -87,6 +91,7 @@ class Chatbot:
       for m in movies:
         input = re.sub('"?%s"?' % m, '', input)
       input = input.lower()
+      input  = re.sub('!', ' very', input)
       # split on whitespace
       input = [xx.strip() for xx in input.split()]
       # remove non alphanumeric characters
@@ -157,14 +162,18 @@ class Chatbot:
       score = 0
       total = 0
       negate = 1
+      intensity = 1
       for word in input.split():
         if word in self.negations or word.endswith('n\'t'): negate *= -1
-        if word in self.sentiment:
+        elif word in self.intensifiers: intensity += 0.1
+        elif word in self.posWords or word in self.negWords or word in self.sentiment: 
           total += 1
-          if self.sentiment[word] == 'pos': score += 1 * negate
+          if word in self.posWords: score += 3 * negate
+          elif word in self.negWords: score -= 3 * negate
+          elif self.sentiment[word] == 'pos': score += 1 * negate
           else: score -= 1 * negate
       if total == 0: return 0
-      return float(score) / total
+      return float(intensity * score) / total
 
     def remove_articles(self, title):
       title = title.lower()
