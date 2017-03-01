@@ -25,8 +25,9 @@ class Chatbot:
     def __init__(self, is_turbo=False):
       self.name = 'moviebot'
       self.is_turbo = is_turbo
-      with open('deps/articles') as f:
+      with open('deps/articles') as f, open('deps/negations') as f2:
         self.articles = set([line.strip() for line in f])
+        self.negations = set([line.strip() for line in f2])
       self.read_data()
       self.userVector = [0] * len(self.ratings)
       self.stemmer = PorterStemmer()
@@ -128,7 +129,7 @@ class Chatbot:
       total = 0
       negate = 1
       for word in input.split():
-        if word == 'not' or word.endswith('n\'t'): negate *= -1
+        if word in self.negations or word.endswith('n\'t'): negate *= -1
         if word in self.sentiment:
           total += 1
           if self.sentiment[word] == 'pos': score += 1 * negate
