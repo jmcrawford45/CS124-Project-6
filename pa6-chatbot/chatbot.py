@@ -83,8 +83,9 @@ class Chatbot:
       # highly recommended                                                        #
       #############################################################################
       # make sure everything is lower case
-      movies = re.finditer('"([^"]*)"', input.lower())
-      input = re.sub('"([^"]*)"', '', input)
+      movies = self.extractTitles(input)
+      for m in movies:
+        input = re.sub('"?%s"?' % m, '', input)
       input = input.lower()
       # split on whitespace
       input = [xx.strip() for xx in input.split()]
@@ -95,14 +96,13 @@ class Chatbot:
       # stem words
       input = [self.stemmer.stem(xx) for xx in input]
       input = ' '.join(input)
-      print input
       if self.is_turbo == True:
         response = 'processed %s in creative mode!!' % input
       else:
         response = 'processed %s in starter mode' % input
 
       for m in movies:
-        movie = self.remove_articles(m.group(1))
+        movie = self.remove_articles(m)
         response += '\nDiscovered movie: %s' % movie
         sentimentScore = self.scoreSentiment(input)
         if movie in self.titleIndex:
@@ -115,13 +115,42 @@ class Chatbot:
           response += '\nYou did not like "%s". Thank you!' % movie
         else:
           response += '\nI\'m sorry, I\'m not quite sure if you liked "%s". Tell me more about "%s".' % (movie, movie)
-          return response
       return response + '\nTell me about another movie you have seen.'
 
 
     #############################################################################
     # 3. Movie Recommendation helper functions                                  #
     #############################################################################
+
+    
+    def extractTitles(self, userInput):
+      movies = [m.group(1) for m in re.finditer('"([^"]*)"', userInput)]
+      if movies: return movies
+      movies = []
+      tokens = [w.strip() for w in userInput.split() if w.strip() != '']
+      i = 0
+      bestMatch = ''
+      while i < len(tokens):
+        found = False
+        end = len(tokens)
+        while end > i and not found:
+          title = ' '.join(tokens[i:end])
+          if self.remove_articles(title) in self.titleIndex:
+            if len(title) > len(bestMatch):
+              bestMatch = title
+              found = True
+          elif self.remove_articles(title.strip(',.?!;:')) in self.titleIndex:
+            if len(title.strip(',.?!;:')) > len(bestMatch):
+              bestMatch = title.strip(',.?!;:')
+              found = True
+          else:
+            end = end - 1
+        i = end
+        if not found: i = end + 1
+      if bestMatch != '': return [bestMatch]
+
+
+
 
     def scoreSentiment(self, input):
       input = re.sub('"([^"]*)"', '', input)
@@ -138,6 +167,7 @@ class Chatbot:
       return float(score) / total
 
     def remove_articles(self, title):
+      title = title.lower()
       tokens = [w.strip() for w in title.split() if w.strip() != '']
       if len(tokens) == 0: return title
       if tokens[0] in self.articles:
