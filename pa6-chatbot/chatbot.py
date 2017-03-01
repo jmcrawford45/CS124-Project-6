@@ -92,7 +92,7 @@ class Chatbot:
         input = re.sub('"?%s"?' % m, '', input)
       input = input.lower()
       input  = re.sub('!', ' very', input)
-      # split on whitespace
+      # splift on whitespace
       input = [xx.strip() for xx in input.split()]
       # remove non alphanumeric characters
       input = [self.alphanum.sub('', xx) for xx in input]
@@ -101,26 +101,25 @@ class Chatbot:
       # stem words
       input = [self.stemmer.stem(xx) for xx in input]
       input = ' '.join(input)
-      if self.is_turbo == True:
-        response = 'processed %s in creative mode!!' % input
-      else:
-        response = 'processed %s in starter mode' % input
-
-      for m in movies:
-        movie = self.remove_articles(m)
-        response += '\nDiscovered movie: %s' % movie
-        sentimentScore = self.scoreSentiment(input)
-        if movie in self.titleIndex:
-          self.userVector[self.titleIndex[movie]] = sentimentScore
-          response += '\nMovie preference added to vector'
-        #print(self.recommend(self.userVector)[:3])
-        if sentimentScore > 0.5:
-          response += '\nYou liked "%s". Thank you!' % movie
-        elif sentimentScore < -0.5:
-          response += '\nYou did not like "%s". Thank you!' % movie
-        else:
-          response += '\nI\'m sorry, I\'m not quite sure if you liked "%s". Tell me more about "%s".' % (movie, movie)
-      return response + '\nTell me about another movie you have seen.'
+      response = ''
+      if self.is_turbo == False:
+        if len(movies) > 1:
+          return 'Please tell me about one movie at a time. Go ahead.'
+        for m in movies:
+          movie = self.remove_articles(m)
+          response += '\nDiscovered movie: %s' % movie
+          sentimentScore = self.scoreSentiment(input)
+          if movie in self.titleIndex:
+            self.userVector[self.titleIndex[movie]] = sentimentScore
+            response += '\nMovie preference added to vector'
+          #print(self.recommend(self.userVector)[:3])
+          if sentimentScore > 0.5:
+            response += '\nYou liked "%s". Thank you!' % movie
+          elif sentimentScore < -0.5:
+            response += '\nYou did not like "%s". Thank you!' % movie
+          else:
+            response += '\nI\'m sorry, I\'m not quite sure if you liked "%s". Tell me more about "%s".' % (movie, movie)
+        return response + '\nTell me about another movie you have seen.'
 
 
     #############################################################################
@@ -132,27 +131,28 @@ class Chatbot:
       movies = [m.group(1) for m in re.finditer('"([^"]*)"', userInput)]
       if movies: return movies
       movies = []
-      tokens = [w.strip() for w in userInput.split() if w.strip() != '']
-      i = 0
-      bestMatch = ''
-      while i < len(tokens):
-        found = False
-        end = len(tokens)
-        while end > i and not found:
-          title = ' '.join(tokens[i:end])
-          if self.remove_articles(title) in self.titleIndex:
-            if len(title) > len(bestMatch):
-              bestMatch = title
-              found = True
-          elif self.remove_articles(title.strip(',.?!;:')) in self.titleIndex:
-            if len(title.strip(',.?!;:')) > len(bestMatch):
-              bestMatch = title.strip(',.?!;:')
-              found = True
-          else:
-            end = end - 1
-        i = end
-        if not found: i = end + 1
-      if bestMatch != '': return [bestMatch]
+      if self.is_turbo:
+        tokens = [w.strip() for w in userInput.split() if w.strip() != '']
+        i = 0
+        bestMatch = ''
+        while i < len(tokens):
+          found = False
+          end = len(tokens)
+          while end > i and not found:
+            title = ' '.join(tokens[i:end])
+            if self.remove_articles(title) in self.titleIndex:
+              if len(title) > len(bestMatch):
+                bestMatch = title
+                found = True
+            elif self.remove_articles(title.strip(',.?!;:')) in self.titleIndex:
+              if len(title.strip(',.?!;:')) > len(bestMatch):
+                bestMatch = title.strip(',.?!;:')
+                found = True
+            else:
+              end = end - 1
+          i = end
+          if not found: i = end + 1
+        if bestMatch != '': return [bestMatch]
 
 
 
