@@ -28,7 +28,7 @@ class Chatbot:
       with open('deps/articles') as f:
         self.articles = set([line.strip() for line in f])
       self.read_data()
-      self.userVector = [0] * len(self.ratings[0])
+      self.userVector = [0] * len(self.ratings)
       self.stemmer = PorterStemmer()
       self.alphanum = re.compile('[^a-zA-Z0-9]')
 
@@ -156,15 +156,14 @@ class Chatbot:
       self.titles, self.ratings = ratings()
       reader = csv.reader(open('data/sentiment.txt', 'rb'))
       self.sentiment = dict(reader)
-      self.titleIndex = {self.titles[i][0]: i for i in range(len(self.titles))}
+      self.titleIndex = {}
       for i in range(len(self.titles)):
         rawTitle = re.sub(r'(.*) \([0-9]*\)', r'\1', self.titles[i][0]).lower()
         for m in re.finditer(r'\(([^()]*)\)', rawTitle):
           altTitle = self.remove_articles(m.group(1))
           self.titleIndex[altTitle] = i
         primaryTitle = self.remove_articles(re.sub(r'\([^()]*\)', '', rawTitle).rstrip())
-        self.titleIndex[primaryTitle] = i
-        
+        self.titleIndex[primaryTitle] = i        
 
 
 
