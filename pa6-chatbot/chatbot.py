@@ -146,38 +146,6 @@ class Chatbot:
       # stem words
       input = [self.stemmer.stem(xx) for xx in input]
       input = ' '.join(input)
-<<<<<<< HEAD
-      response = ''
-      if self.is_turbo == False:
-        if len(self.recommendations) == 0:
-          if len(movies) == 0:
-            return self.noMovies()
-          if len(movies) > 1:
-            return self.moreThanOneMovie()
-          m = movies[0]
-          movie = self.remove_articles(m)
-          sentimentScore = self.scoreSentiment(input)
-          if sentimentScore > 0.5:
-            response += self.getPositiveMessage(sentimentScore,movie)
-          elif sentimentScore < -0.5:
-            response += self.getNegativeMessage(sentimentScore,movie)
-          else:
-            response += self.getUnknownMessage(movie)
-          if movie in self.titleIndex:
-            self.userVector[self.titleIndex[movie]] = sentimentScore
-          else:
-            return self.movieNotFound() #return don't generate recommendations
-          self.recommendations = self.recommend(self.userVector)
-          if len(self.recommendations) == 0:
-            return response + ' Tell me about another movie you have seen.'
-        if len(self.recommendations) > 0:
-          response += ('That\'s enough for me to make a recommendation.\n'
-           'I suggest you watch "%s".\n'
-           'Would you like to hear another recommendation? (Or enter :quit if you\'re done.)') % self.recommendations[0]
-          del self.recommendations[0]
-          return response
-      print self.recommendations
-
       if self.is_turbo == False: return self.starterProcess(movies, input)
       else: return self.turboProcess(movies, input)
 
