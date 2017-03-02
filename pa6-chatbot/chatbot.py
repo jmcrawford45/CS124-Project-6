@@ -168,11 +168,10 @@ class Chatbot:
     def turboProcess(self, movies, input):
       response = ''
       if len(self.recommendations) == 0:
-        print input
         sentimentScore = self.scoreSentiment(input)
         tokens = input.split()
         if 'i' in tokens or 'me' in tokens:
-          if 'feel' in tokens or 'am' in tokens or sentimentScore > 0.5 or sentimentScore < -0.5:
+          if 'feel' in tokens or 'am' in tokens or not(sentimentScore < 0.5 and sentimentScore > -0.5):
             return self.emotionMessage(sentimentScore)
         if len(movies) == 0:
           return self.noMovies()
@@ -184,7 +183,6 @@ class Chatbot:
         if movie not in self.titleIndex:
           for entry in self.titleIndex:
             distance = self.editDistance(movie.lower(), entry)
-            if entry == 'toy story': print distance, entry
             if distance < minDistance:
               minDistance = distance
               spellCorrectedMovie = entry
