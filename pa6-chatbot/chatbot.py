@@ -158,6 +158,11 @@ class Chatbot:
     def turboProcess(self, movies, input):
       response = ''
       if len(self.recommendations) == 0:
+        sentimentScore = self.scoreSentiment(input)
+        tokens = input.split()
+        if 'i' in input or 'me' in input:
+          if 'feel' in input or 'am' in input or abs(sentimentScore) > 0.5:
+            print sentimentScore
         if len(movies) == 0:
           return 'I want to hear more about movies! Tell me about another movie you have seen.'
         if len(movies) > 1:
@@ -173,7 +178,6 @@ class Chatbot:
               minDistance = distance
               spellCorrectedMovie = entry
         if spellCorrectedMovie: movie = spellCorrectedMovie
-        sentimentScore = self.scoreSentiment(input)
         if sentimentScore > 0.5:
           response += self.getPositiveMessage(sentimentScore,movie)
         elif sentimentScore < -0.5:
@@ -232,22 +236,24 @@ class Chatbot:
         i = 0
         bestMatch = ''
         while i < len(tokens):
-          found = False
-          end = len(tokens)
-          while end > i and not found:
-            title = ' '.join(tokens[i:end])
-            if self.remove_articles(title) in self.titleIndex:
-              if len(title) > len(bestMatch):
-                bestMatch = title
-                found = True
-            elif self.remove_articles(title.strip(',.?!;:')) in self.titleIndex:
-              if len(title.strip(',.?!;:')) > len(bestMatch):
-                bestMatch = title.strip(',.?!;:')
-                found = True
-            else:
-              end = end - 1
-          i = end
-          if not found: i = end + 1
+          if tokens[i][0].isupper():
+            found = False
+            end = len(tokens)
+            while end > i and not found:
+              title = ' '.join(tokens[i:end])
+              if self.remove_articles(title) in self.titleIndex:
+                if len(title) > len(bestMatch):
+                  bestMatch = title
+                  found = True
+              elif self.remove_articles(title.strip(',.?!;:')) in self.titleIndex:
+                if len(title.strip(',.?!;:')) > len(bestMatch):
+                  bestMatch = title.strip(',.?!;:')
+                  found = True
+              else:
+                end = end - 1
+            i = end
+            if not found: i = end + 1
+          else: i += 1
         if bestMatch != '': return [bestMatch]
       return []
 
