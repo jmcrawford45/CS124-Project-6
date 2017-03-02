@@ -23,7 +23,7 @@ class Chatbot:
     # `moviebot` is the default chatbot. Change it to your chatbot's name       #
     #############################################################################
     def __init__(self, is_turbo=False):
-      self.name = 'moviebot'
+      self.name = 'ChatbotAndChill'
       self.is_turbo = is_turbo
       with open('deps/articles') as f, open('deps/negations') as f2:
         self.articles = set([line.strip() for line in f])
@@ -52,7 +52,7 @@ class Chatbot:
       # TODO: Write a short greeting message                                      #
       #############################################################################
 
-      greeting_message = 'How can I help you?'
+      greeting_message = 'It was nice talking with you. Goodbye!'
 
       #############################################################################
       #                             END OF YOUR CODE                              #
@@ -380,11 +380,17 @@ class Chatbot:
     #############################################################################
     def intro(self):
       return """
-      Your task is to implement the chatbot as detailed in the PA6 instructions.
-      Remember: in the starter mode, movie names will come in quotation marks and
-      expressions of sentiment will be simple!
-      Write here the description for your own chatbot!
-      Enter :restart to erase your sentiment history!
+      Chatbot and Chill implements all of the starter requirements along with the
+      following creative additions.
+        1. Identifying movies without quotation marks or perfect capitalization
+        2. Fine-grained sentiment extraction
+        3. Spell-checking movie titles -4 pts
+        4. Using non-binarized datasets
+        5. Speaking very fluently
+        6. Responding to emotion
+        7. Responding to arbitrary input
+        8. Custom Additions
+          Enter :restart to erase your sentiment history!
       """
 
 
