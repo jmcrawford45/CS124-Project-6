@@ -159,9 +159,9 @@ class Chatbot:
       response = ''
       if len(self.recommendations) == 0:
         if len(movies) == 0:
-          return 'I want to hear more about movies! Tell me about another movie you have seen.'
+          return self.noMovies()
         if len(movies) > 1:
-          return 'Please tell me about one movie at a time. Go ahead.'
+          return self.moreThanOneMovie()
         movie = self.remove_articles(movies[0])
         minDistance = 3 * len(movie.split()) #Allow three errors per word
         spellCorrectedMovie = None
@@ -198,9 +198,9 @@ class Chatbot:
       response = ''
       if len(self.recommendations) == 0:
         if len(movies) == 0:
-          return 'I want to hear more about movies! Tell me about another movie you have seen.'
+          return self.noMovies()
         if len(movies) > 1:
-          return 'Please tell me about one movie at a time. Go ahead.'
+          return self.moreThanOneMovie()
         movie = self.remove_articles(movies[0])
         sentimentScore = self.scoreSentiment(input)
         if sentimentScore > 0.5:
