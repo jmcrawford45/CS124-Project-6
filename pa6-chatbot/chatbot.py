@@ -78,7 +78,7 @@ class Chatbot:
         veryPositive = ['You really liked "%s". Thanks!','You loved "%s". Thanks! ',
         'You really enjoyed "%s". Thank you! ']
         positive = ['You liked "%s". Thanks! ','You enjoyed "%s". Thanks! ']
-        if sentimentScore > 2.5: #really positive
+        if sentimentScore > 1.0: #really positive
             return veryPositive[randint(0,len(veryPositive)-1)] % movie
         return positive[randint(0,len(positive)-1)] % movie
 
@@ -87,7 +87,7 @@ class Chatbot:
         'You detested "%s". Thank you. ']
         negative = ['You did\'t like "%s". Thanks. ','You did not like "%s". Thanks. ',
         'You disliked "%s". Thanks. ']
-        if sentimentScore < -2.5:
+        if sentimentScore < -1.0:
             return veryNegative[randint(0,len(veryNegative)-1)] % movie
         return negative[randint(0,len(negative)-1)] % movie
 
