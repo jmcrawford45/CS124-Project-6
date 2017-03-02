@@ -93,7 +93,6 @@ class Chatbot:
       # highly recommended                                                        #
       #############################################################################
       # make sure everything is lower case
-      print 'hello world'
       movies = self.extractTitles(input)
       for m in movies:
         input = re.sub('"?%s"?' % m, '', input)
@@ -116,6 +115,17 @@ class Chatbot:
           if len(movies) > 1:
             return 'Please tell me about one movie at a time. Go ahead.'
           m = movies[0]
+          minDistance = 2 * len(m.split()) #Allow two errors per word
+          spellCorrectedMovie = None
+          if m not in self.titleIndex:
+            for entry in self.titleIndex:
+              distance = self.editDistance(m.lower(), entry)
+              if distance < minDistance:
+                minDistance = distance
+                spellCorrectedMovie = entry
+                print entry, distance
+          if spellCorrectedMovie: m = spellCorrectedMovie
+          print m, minDistance
           movie = self.remove_articles(m)
           sentimentScore = self.scoreSentiment(input)
           if sentimentScore > 0.5:
@@ -137,7 +147,6 @@ class Chatbot:
            'Would you like to hear another recommendation? (Or enter :quit if you\'re done.)') % self.recommendations[0]
           del self.recommendations[0]
           return response
-      print self.recommendations
 
 
 
@@ -258,6 +267,21 @@ class Chatbot:
           recommendArr[i] = (i, recommendValue)
       recommendations = sorted(recommendArr, reverse=True, key = lambda x: x[1])
       return [self.titles[rec[0]][0] for rec in recommendations]
+
+    def editDistance(self, title1, title2):
+      m=len(title1)+1
+      n=len(title2)+1
+
+      tbl = [[0] * n for i in range(m)]
+      for i in range(n):
+        tbl[0][i] = i
+      for i in range(m):
+        tbl[i][0] = i
+      for i in range(1, m):
+        for j in range(1, n):
+          cost = 0 if title1[i-1] == title2[j-1] else 2
+          tbl[i][j] = min(tbl[i][j-1]+1, tbl[i-1][j]+1, tbl[i-1][j-1]+cost)
+      return tbl[m-1][n-1]
 
 
     #############################################################################
