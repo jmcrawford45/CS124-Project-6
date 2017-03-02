@@ -24,13 +24,13 @@ class Chatbot:
     #############################################################################
     def __init__(self, is_turbo=False):
       self.name = 'ChatbotAndChill'
+      self.stemmer = PorterStemmer()
       self.is_turbo = is_turbo
       with open('deps/articles') as f, open('deps/negations') as f2:
         self.articles = set([line.strip() for line in f])
         self.negations = set([line.strip() for line in f2])
       self.read_data()
       self.userVector = {}
-      self.stemmer = PorterStemmer()
       with open('deps/posWords') as f, open('deps/negWords') as f2, open('deps/intensifiers') as f3:
         self.posWords = set([self.stemmer.stem(line.strip()) for line in f])
         self.negWords = set([self.stemmer.stem(line.strip()) for line in f2])
@@ -112,6 +112,16 @@ class Chatbot:
         'Never heard of it!', 'Wow, a hipster.','I haven\'t heard of that movie. I\'ll have to check it out. ']
         return notFound[randint(0,len(notFound)-1)]
 
+    def happyMessage(self):
+      return 'I am glad to hear that.\n Would you like to talk about some movies?'
+
+    def sadMessage(self):
+      return 'I am sorry to hear that.\n Maybe talking about a movie that you liked would help you feel better.'
+
+    def emotionMessage(self, sentimentScore):
+      if sentimentScore > 0.1: return self.happyMessage()
+      return self.sadMessage()
+
     #############################################################################
     # 2. Modules 2 and 3: extraction and transformation                         #
     #############################################################################
@@ -158,11 +168,12 @@ class Chatbot:
     def turboProcess(self, movies, input):
       response = ''
       if len(self.recommendations) == 0:
+        print input
         sentimentScore = self.scoreSentiment(input)
         tokens = input.split()
-        if 'i' in input or 'me' in input:
-          if 'feel' in input or 'am' in input or abs(sentimentScore) > 0.5:
-            print sentimentScore
+        if 'i' in tokens or 'me' in tokens:
+          if 'feel' in tokens or 'am' in tokens or sentimentScore > 0.5 or sentimentScore < -0.5:
+            return self.emotionMessage(sentimentScore)
         if len(movies) == 0:
           return self.noMovies()
         if len(movies) > 1:
@@ -295,6 +306,8 @@ class Chatbot:
       self.titles, self.ratings = ratings()
       reader = csv.reader(open('data/sentiment.txt', 'rb'))
       self.sentiment = dict(reader)
+      for (word, value) in self.sentiment.items():
+        self.sentiment[self.stemmer.stem(word)] = value
       self.titleIndex = {}
       for i in range(len(self.titles)):
         rawTitle = re.sub(r'(.*) \([0-9]*\)', r'\1', self.titles[i][0]).lower()
