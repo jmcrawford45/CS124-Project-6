@@ -74,6 +74,43 @@ class Chatbot:
 
       return goodbye_message
 
+    def getPositiveMessage(self,sentimentScore,movie):
+        veryPositive = ['You really liked "%s". Thanks!','You loved "%s". Thanks! ',
+        'You really enjoyed "%s". Thank you! ']
+        positive = ['You liked "%s". Thanks! ','You enjoyed "%s". Thanks! ']
+        if sentimentScore > 2.5: #really positive
+            return veryPositive[randint(0,len(veryPositive)-1)] % movie
+        return positive[randint(0,len(positive)-1)] % movie
+
+    def getNegativeMessage(self,sentimentScore,movie):
+        veryNegative = ['You really disliked "%s". Thanks. ','You hated "%s". Thanks. ',
+        'You detested "%s". Thank you. ']
+        negative = ['You did\'t like "%s". Thanks. ','You did not like "%s". Thanks. ',
+        'You disliked "%s". Thanks. ']
+        if sentimentScore < -2.5:
+            return veryNegative[randint(0,len(veryNegative)-1)] % movie
+        return negative[randint(0,len(negative)-1)] % movie
+
+    def getUnknownMessage(self,movie):
+        unknown = ['I\'m sorry, I\'m not quite sure if you liked "%s". Tell me more about "%s".',
+        'Hmm. I\'m not sure if you enjoyed "%s" or not. Tell me more about "%s". ',]
+        return unknown[randint(0,len(unknown)-1)] % (movie,movie)
+
+    def moreThanOneMovie(self):
+        moreThanOne = ['Please tell me about one movie at a time. Go ahead.',
+        'Whoa, whoa! One movie at a time please! Go ahead.']
+        return moreThanOne[randint(0,len(moreThanOne)-1)]
+
+    def noMovies(self):
+        nmovies = ['I want to hear more about movies! Tell me about another movie you have seen.',
+        'That\'s neat! Have you seen any movies recently? Tell me about them! ',
+        'I\'m more interested in movies! Tell me about movies you have seen. ']
+        return nmovies[randint(0,len(nmovies)-1)]
+
+    def movieNotFound(self):
+        notFound = ['Hmm, I\'ve never heard of that movie.','I don\'t think I\'ve seen that movie before. ',
+        'Never heard of it!', 'Wow, a hipster.','I haven\'t heard of that movie. I\'ll have to check it out. ']
+        return notFound[randint(0,len(notFound)-1)]
 
     #############################################################################
     # 2. Modules 2 and 3: extraction and transformation                         #
@@ -90,6 +127,10 @@ class Chatbot:
       # calling other functions. Although modular code is not graded, it is       #
       # highly recommended                                                        #
       #############################################################################
+      if input == ':restart':
+          self.userVector.clear()
+          del self.recommendations[:]
+          return "Clearing the user history!"
       # make sure everything is lower case
       movies = self.extractTitles(input)
       for m in movies:
@@ -109,22 +150,22 @@ class Chatbot:
       if self.is_turbo == False:
         if len(self.recommendations) == 0:
           if len(movies) == 0:
-            return 'I want to hear more about movies! Tell me about another movie you have seen.'
+            return self.noMovies()
           if len(movies) > 1:
-            return 'Please tell me about one movie at a time. Go ahead.'
+            return self.moreThanOneMovie()
           m = movies[0]
           movie = self.remove_articles(m)
           sentimentScore = self.scoreSentiment(input)
           if sentimentScore > 0.5:
-            response += 'You liked "%s". Thank you!' % movie
+            response += self.getPositiveMessage(sentimentScore,movie)
           elif sentimentScore < -0.5:
-            response += 'You did not like "%s". Thank you!' % movie
+            response += self.getNegativeMessage(sentimentScore,movie)
           else:
-            response += 'I\'m sorry, I\'m not quite sure if you liked "%s". Tell me more about "%s".' % (movie, movie)
+            response += self.getUnknownMessage(movie)
           if movie in self.titleIndex:
             self.userVector[self.titleIndex[movie]] = sentimentScore
           else:
-            response = 'Hmm, I\'ve never heard of that movie.'
+            return self.movieNotFound() #return don't generate recommendations
           self.recommendations = self.recommend(self.userVector)
           if len(self.recommendations) == 0:
             return response + ' Tell me about another movie you have seen.'
@@ -142,7 +183,7 @@ class Chatbot:
     # 3. Movie Recommendation helper functions                                  #
     #############################################################################
 
-    
+
     def extractTitles(self, userInput):
       movies = [m.group(1) for m in re.finditer('"([^"]*)"', userInput)]
       if movies: return movies
@@ -180,7 +221,7 @@ class Chatbot:
       for word in input.split():
         if word in self.negations or word.endswith('n\'t'): negate *= -1
         elif word in self.intensifiers: intensity += 0.1
-        elif word in self.posWords or word in self.negWords or word in self.sentiment: 
+        elif word in self.posWords or word in self.negWords or word in self.sentiment:
           total += 1
           if word in self.posWords: score += 3 * negate
           elif word in self.negWords: score -= 3 * negate
@@ -216,7 +257,7 @@ class Chatbot:
           altTitle = self.remove_articles(m.group(1))
           self.titleIndex[altTitle] = i
         primaryTitle = self.remove_articles(re.sub(r'\([^()]*\)', '', rawTitle).rstrip())
-        self.titleIndex[primaryTitle] = i        
+        self.titleIndex[primaryTitle] = i
 
 
 
@@ -278,6 +319,7 @@ class Chatbot:
       Remember: in the starter mode, movie names will come in quotation marks and
       expressions of sentiment will be simple!
       Write here the description for your own chatbot!
+      Enter :restart to erase your sentiment history!
       """
 
 
