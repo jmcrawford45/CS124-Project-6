@@ -37,7 +37,9 @@ class Chatbot:
         self.intensifiers = set([self.stemmer.stem(line.strip()) for line in f3])
       self.alphanum = re.compile('[^a-zA-Z0-9]')
       self.similarities = {}
-      self.binarize()
+      if not self.is_turbo:
+        self.binarize()
+        self.ratings = self.binaryRatings
       self.recommendations = []
 
 
@@ -236,9 +238,9 @@ class Chatbot:
       elif (j,i) in self.similarities:
         return self.similarities[(j,i)]
       else:
-        num = np.dot(self.binaryRatings[i],self.binaryRatings[j])
-        norm1 = np.linalg.norm(self.binaryRatings[i]+1e-7)
-        norm2 = np.linalg.norm(self.binaryRatings[j]+1e-7)
+        num = np.dot(self.ratings[i],self.binaryRatings[j])
+        norm1 = np.linalg.norm(self.ratings[i]+1e-7)
+        norm2 = np.linalg.norm(self.ratings[j]+1e-7)
         self.similarities[(i,j)] = num/(norm1*norm2)
         return self.similarities[(i,j)]
 
