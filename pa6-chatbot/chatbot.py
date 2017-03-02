@@ -29,13 +29,15 @@ class Chatbot:
         self.articles = set([line.strip() for line in f])
         self.negations = set([line.strip() for line in f2])
       self.read_data()
-      self.userVector = [0] * len(self.ratings)
+      self.userVector = {}
       self.stemmer = PorterStemmer()
       with open('deps/posWords') as f, open('deps/negWords') as f2, open('deps/intensifiers') as f3:
         self.posWords = set([self.stemmer.stem(line.strip()) for line in f])
         self.negWords = set([self.stemmer.stem(line.strip()) for line in f2])
         self.intensifiers = set([self.stemmer.stem(line.strip()) for line in f3])
       self.alphanum = re.compile('[^a-zA-Z0-9]')
+      self.similarities = {}
+      self.binarize()
 
 
 
@@ -121,7 +123,7 @@ class Chatbot:
           self.userVector[self.titleIndex[movie]] = sentimentScore
         else:
           response = 'Hmm, I\'ve never heard of that movie.'
-        #print(self.recommend(self.userVector)[:3])
+        print(self.recommend(self.userVector))
         return response + ' Tell me about another movie you have seen.'
 
 
@@ -158,9 +160,6 @@ class Chatbot:
         if bestMatch != '': return [bestMatch]
       return []
 
-
-
-
     def scoreSentiment(self, input):
       input = re.sub('"([^"]*)"', '', input)
       score = 0
@@ -191,7 +190,6 @@ class Chatbot:
           tokens[-1] = tokens[-1][:-1]
       return ' '.join([w for w in tokens])
 
-
     def read_data(self):
       """Reads the ratings matrix from file"""
       # This matrix has the following shape: num_movies x num_users
@@ -214,43 +212,38 @@ class Chatbot:
     def binarize(self):
       """Modifies the ratings matrix to make all of the ratings binary"""
       self.binaryRatings = [row[:] for row in self.ratings]
-      for i in range(len(self.ratings)):
-        movie = self.ratings[i]
-        for j in range(len(movie)):
-          rating = movie[j]
-          if rating > 0 and rating < 3.5:
-            self.binaryRatings[i][j] = -1
-          elif rating > 0:
-            self.binaryRatings[i][j] = 1
-          else:
-            self.binaryRatings[i][j] = 0
+      self.binaryRatings = np.array(self.binaryRatings)
+      self.binaryRatings[np.where(self.binaryRatings >= 3.5)] = -5
+      self.binaryRatings[np.where(self.binaryRatings > 0.1)] = -1
+      self.binaryRatings[np.where(self.binaryRatings == -5)] = 1
 
-
-    def distance(self, u, v):
-      """Calculates a given distance function between vectors u and v"""
-      # TODO: Implement the distance function between vectors u and v]
-      # Note: you can also think of this as computing a similarity measure
-      dotProduct = 0
-      for a,b in zip(u,v):
-        dotProduct += a * b
-      return dotProduct
+    def getSimilarity(i,j):
+      """Calculates a given distance function between items i and j"""
+        if (i,j) in self.similarities:
+            return self.similarities[(i,j)]
+        elif (j,i) in self.similarities:
+            return self.similarities[(j,i)]
+        else:
+            num = np.dot(self.binaryRatings[i],self.binaryRatings[j])
+            norm1 = np.linalg.norm(self.binaryRatings[i]+1e-7)
+            norm2 = np.linalg.norm(self.binaryRatings[j]+1e-7)
+            self.similarities[(i,j)] = num/(norm1*norm2)
+            return self.similarities[(i,j)]
 
     def recommend(self, u):
       """Generates a list of movies based on the input vector u using
       collaborative filtering"""
-      # TODO: Implement a recommendation function that takes a user vector u
-      # and outputs a list of movies recommended by the chatbot
-      bestSimilarity = -1
-      bestUser = 0
-      for i in range(len(self.ratings)):
-        user = self.ratings[i]
-        similarity = self.distance(u, user)
-        if similarity > bestSimilarity:
-          bestSimilarity = similarity
-          bestUser = i
-      recommendations = [self.ratings[bestUser] for i in range(len(u)) if u[i] == 0]
-      recommendations = sorted(recommendations, reverse=True)
-      return recommendations
+      recommendArr = [(i, 0) for i in range(len(self.ratings))]
+      for i in range(len(recommendArr)):
+        if i not in u:
+          recommendValue = 0
+          for (movie, rating) in u.items():
+            simScore = getSimilarity(i,movie)
+            if simScore > 0:
+              recommendValue += rating*simScore
+          recommendArr[i] = (i, recommendValue)
+      recommendations = sorted(recommendArr, reverse=True, key = lambda x: x[1])
+      return [self.titles[rec[0]][0] for rec in recommendations[:3]]
 
 
     #############################################################################
