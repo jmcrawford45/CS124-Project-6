@@ -146,6 +146,7 @@ class Chatbot:
       # stem words
       input = [self.stemmer.stem(xx) for xx in input]
       input = ' '.join(input)
+<<<<<<< HEAD
       response = ''
       if self.is_turbo == False:
         if len(self.recommendations) == 0:
@@ -177,18 +178,88 @@ class Chatbot:
           return response
       print self.recommendations
 
+      if self.is_turbo == False: return self.starterProcess(movies, input)
+      else: return self.turboProcess(movies, input)
+
 
 
     #############################################################################
     # 3. Movie Recommendation helper functions                                  #
     #############################################################################
 
+    def turboProcess(self, movies, input):
+      response = ''
+      if len(self.recommendations) == 0:
+        if len(movies) == 0:
+          return 'I want to hear more about movies! Tell me about another movie you have seen.'
+        if len(movies) > 1:
+          return 'Please tell me about one movie at a time. Go ahead.'
+        movie = self.remove_articles(movies[0])
+        minDistance = 3 * len(movie.split()) #Allow three errors per word
+        spellCorrectedMovie = None
+        if movie not in self.titleIndex:
+          for entry in self.titleIndex:
+            distance = self.editDistance(movie.lower(), entry)
+            if entry == 'toy story': print distance, entry
+            if distance < minDistance:
+              minDistance = distance
+              spellCorrectedMovie = entry
+        if spellCorrectedMovie: movie = spellCorrectedMovie
+        sentimentScore = self.scoreSentiment(input)
+        if sentimentScore > 0.5:
+          response += self.getPositiveMessage(sentimentScore,movie)
+        elif sentimentScore < -0.5:
+          response += self.getNegativeMessage(sentimentScore,movie)
+        else:
+          response += self.getUnknownMessage(movie)
+        if movie in self.titleIndex:
+          self.userVector[self.titleIndex[movie]] = sentimentScore
+        else:
+          return self.movieNotFound() #return don't generate recommendations
+        self.recommendations = self.recommend(self.userVector)
+        if len(self.recommendations) == 0:
+          return response + ' Tell me about another movie you have seen.'
+      if len(self.recommendations) > 0:
+        response += (' That\'s enough for me to make a recommendation.\n'
+         'I suggest you watch "%s".\n'
+         'Would you like to hear another recommendation? (Or enter :quit if you\'re done.)') % self.recommendations[0]
+        del self.recommendations[0]
+      return response
+
+    def starterProcess(self, movies, input):
+      response = ''
+      if len(self.recommendations) == 0:
+        if len(movies) == 0:
+          return 'I want to hear more about movies! Tell me about another movie you have seen.'
+        if len(movies) > 1:
+          return 'Please tell me about one movie at a time. Go ahead.'
+        movie = self.remove_articles(movies[0])
+        sentimentScore = self.scoreSentiment(input)
+        if sentimentScore > 0.5:
+          response += self.getPositiveMessage(sentimentScore,movie)
+        elif sentimentScore < -0.5:
+          response += self.getNegativeMessage(sentimentScore,movie)
+        else:
+          response += self.getUnknownMessage(movie)
+        if movie in self.titleIndex:
+          self.userVector[self.titleIndex[movie]] = sentimentScore
+        else:
+          return self.movieNotFound() #return don't generate recommendations
+        self.recommendations = self.recommend(self.userVector)
+        if len(self.recommendations) == 0:
+          return response + ' Tell me about another movie you have seen.'
+      if len(self.recommendations) > 0:
+        response += ('That\'s enough for me to make a recommendation.\n'
+         'I suggest you watch "%s".\n'
+         'Would you like to hear another recommendation? (Or enter :quit if you\'re done.)') % self.recommendations[0]
+        del self.recommendations[0]
+      return response
 
     def extractTitles(self, userInput):
       movies = [m.group(1) for m in re.finditer('"([^"]*)"', userInput)]
       if movies: return movies
       movies = []
-      if self.is_turbo:
+      if self.is_turbo == True:
         tokens = [w.strip() for w in userInput.split() if w.strip() != '']
         i = 0
         bestMatch = ''
@@ -276,11 +347,18 @@ class Chatbot:
       elif (j,i) in self.similarities:
         return self.similarities[(j,i)]
       else:
-        num = np.dot(self.binaryRatings[i],self.binaryRatings[j])
+        if self.is_turbo == True:
+          num = np.dot(self.ratings[i],self.ratings[j])
+          norm1 = np.linalg.norm(self.ratings[i]+1e-7)
+          norm2 = np.linalg.norm(self.ratings[j]+1e-7)
+          self.similarities[(i,j)] = num/(norm1*norm2)
+          return self.similarities[(i,j)]
+        num = np.dot(self.ratings[i],self.binaryRatings[j])
         norm1 = np.linalg.norm(self.binaryRatings[i]+1e-7)
         norm2 = np.linalg.norm(self.binaryRatings[j]+1e-7)
         self.similarities[(i,j)] = num/(norm1*norm2)
         return self.similarities[(i,j)]
+
 
     def recommend(self, u):
       """Generates a list of movies based on the input vector u using
@@ -289,13 +367,32 @@ class Chatbot:
       for i in range(len(recommendArr)):
         if i not in u:
           recommendValue = 0
+          simSum = 0
           for (movie, rating) in u.items():
             simScore = self.getSimilarity(i,movie)
             if simScore > 0:
               recommendValue += rating*simScore
-          recommendArr[i] = (i, recommendValue)
+              simSum += simScore
+          if self.is_turbo == True and simSum > 0 and recommendValue > 0:
+              recommendArr[i] = (i, recommendValue/simSum)
+          else: recommendArr[i] = (i, recommendValue)
       recommendations = sorted(recommendArr, reverse=True, key = lambda x: x[1])
       return [self.titles[rec[0]][0] for rec in recommendations]
+
+    def editDistance(self, title1, title2):
+      m=len(title1)+1
+      n=len(title2)+1
+
+      tbl = [[0] * n for i in range(m)]
+      for i in range(n):
+        tbl[0][i] = i
+      for i in range(m):
+        tbl[i][0] = i
+      for i in range(1, m):
+        for j in range(1, n):
+          cost = 0 if title1[i-1] == title2[j-1] else 2
+          tbl[i][j] = min(tbl[i][j-1]+1, tbl[i-1][j]+1, tbl[i-1][j-1]+cost)
+      return tbl[m-1][n-1]
 
 
     #############################################################################
