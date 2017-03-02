@@ -38,6 +38,7 @@ class Chatbot:
       self.alphanum = re.compile('[^a-zA-Z0-9]')
 
 
+
     #############################################################################
     # 1. WARM UP REPL
     #############################################################################
@@ -103,23 +104,25 @@ class Chatbot:
       input = ' '.join(input)
       response = ''
       if self.is_turbo == False:
+        if len(movies) == 0:
+          return 'I want to hear more about movies! Tell me about another movie you have seen.'
         if len(movies) > 1:
           return 'Please tell me about one movie at a time. Go ahead.'
-        for m in movies:
-          movie = self.remove_articles(m)
-          response += '\nDiscovered movie: %s' % movie
-          sentimentScore = self.scoreSentiment(input)
-          if movie in self.titleIndex:
-            self.userVector[self.titleIndex[movie]] = sentimentScore
-            response += '\nMovie preference added to vector'
-          #print(self.recommend(self.userVector)[:3])
-          if sentimentScore > 0.5:
-            response += '\nYou liked "%s". Thank you!' % movie
-          elif sentimentScore < -0.5:
-            response += '\nYou did not like "%s". Thank you!' % movie
-          else:
-            response += '\nI\'m sorry, I\'m not quite sure if you liked "%s". Tell me more about "%s".' % (movie, movie)
-        return response + '\nTell me about another movie you have seen.'
+        m = movies[0]
+        movie = self.remove_articles(m)
+        sentimentScore = self.scoreSentiment(input)
+        if sentimentScore > 0.5:
+          response += 'You liked "%s". Thank you!' % movie
+        elif sentimentScore < -0.5:
+          response += 'You did not like "%s". Thank you!' % movie
+        else:
+          response += 'I\'m sorry, I\'m not quite sure if you liked "%s". Tell me more about "%s".' % (movie, movie)
+        if movie in self.titleIndex:
+          self.userVector[self.titleIndex[movie]] = sentimentScore
+        else:
+          response = 'Hmm, I\'ve never heard of that movie.'
+        #print(self.recommend(self.userVector)[:3])
+        return response + ' Tell me about another movie you have seen.'
 
 
     #############################################################################
@@ -153,6 +156,7 @@ class Chatbot:
           i = end
           if not found: i = end + 1
         if bestMatch != '': return [bestMatch]
+      return []
 
 
 
