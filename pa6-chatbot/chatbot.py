@@ -91,6 +91,7 @@ class Chatbot:
       # highly recommended                                                        #
       #############################################################################
       # make sure everything is lower case
+      print 'hello world'
       movies = self.extractTitles(input)
       for m in movies:
         input = re.sub('"?%s"?' % m, '', input)
