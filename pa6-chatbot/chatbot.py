@@ -169,11 +169,11 @@ class Chatbot:
       response = ''
       if len(self.recommendations) == 0:
         sentimentScore = self.scoreSentiment(input)
-        tokens = input.split()
-        if 'i' in tokens or 'me' in tokens:
-          if 'feel' in tokens or 'am' in tokens or not(sentimentScore < 0.5 and sentimentScore > -0.5):
-            return self.emotionMessage(sentimentScore)
         if len(movies) == 0:
+          tokens = input.split()
+          if 'i' in tokens or 'me' in tokens:
+            if not(sentimentScore < 0.5 and sentimentScore > -0.5):
+              return self.emotionMessage(sentimentScore)
           return self.noMovies()
         if len(movies) > 1:
           return self.moreThanOneMovie()
