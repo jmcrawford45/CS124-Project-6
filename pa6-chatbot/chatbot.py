@@ -52,7 +52,9 @@ class Chatbot:
       # TODO: Write a short greeting message                                      #
       #############################################################################
 
-      greeting_message = 'It was nice talking with you. Goodbye!'
+      greeting_message = """Hi! I'm ChatbotAndChill! I'm going to recommend a movie to you.
+First I will ask you about your taste in movies.
+Tell me about a movie that you have seen."""
 
       #############################################################################
       #                             END OF YOUR CODE                              #
@@ -66,7 +68,7 @@ class Chatbot:
       # TODO: Write a short farewell message                                      #
       #############################################################################
 
-      goodbye_message = 'Have a nice day!'
+      goodbye_message = 'It was nice talking with you. Goodbye!'
 
       #############################################################################
       #                             END OF YOUR CODE                              #
