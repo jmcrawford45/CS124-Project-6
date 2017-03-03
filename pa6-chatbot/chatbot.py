@@ -15,6 +15,7 @@ import re
 from movielens import ratings
 from random import randint
 from PorterStemmer import PorterStemmer
+from collections import defaultdict
 
 class Chatbot:
     """Simple class to implement the chatbot for PA 6."""
@@ -24,13 +25,13 @@ class Chatbot:
     #############################################################################
     def __init__(self, is_turbo=False):
       self.name = 'ChatbotAndChill'
+      self.stemmer = PorterStemmer()
       self.is_turbo = is_turbo
       with open('deps/articles') as f, open('deps/negations') as f2:
         self.articles = set([line.strip() for line in f])
         self.negations = set([line.strip() for line in f2])
       self.read_data()
       self.userVector = {}
-      self.stemmer = PorterStemmer()
       with open('deps/posWords') as f, open('deps/negWords') as f2, open('deps/intensifiers') as f3:
         self.posWords = set([self.stemmer.stem(line.strip()) for line in f])
         self.negWords = set([self.stemmer.stem(line.strip()) for line in f2])
@@ -48,11 +49,10 @@ class Chatbot:
 
     def greeting(self):
       """chatbot greeting message"""
-      #############################################################################
-      # TODO: Write a short greeting message                                      #
-      #############################################################################
 
-      greeting_message = 'It was nice talking with you. Goodbye!'
+      greeting_message = """Hi! I'm ChatbotAndChill! I'm going to recommend a movie to you.
+First I will ask you about your taste in movies.
+Tell me about a movie that you have seen."""
 
       #############################################################################
       #                             END OF YOUR CODE                              #
@@ -62,11 +62,9 @@ class Chatbot:
 
     def goodbye(self):
       """chatbot goodbye message"""
-      #############################################################################
-      # TODO: Write a short farewell message                                      #
-      #############################################################################
 
-      goodbye_message = 'Have a nice day!'
+
+      goodbye_message = 'It was nice talking with you. Goodbye!'
 
       #############################################################################
       #                             END OF YOUR CODE                              #
@@ -198,6 +196,16 @@ class Chatbot:
         'Never heard of it!', 'Wow, a hipster.','I haven\'t heard of that movie. I\'ll have to check it out. ']
         return notFound[randint(0,len(notFound)-1)]
 
+    def happyMessage(self):
+      return 'I am glad to hear that.\n Would you like to talk about some movies?'
+
+    def sadMessage(self):
+      return 'I am sorry to hear that.\n Maybe talking about a movie that you liked would help you feel better.'
+
+    def emotionMessage(self, sentimentScore):
+      if sentimentScore > 0.1: return self.happyMessage()
+      return self.sadMessage()
+
     #############################################################################
     # 2. Modules 2 and 3: extraction and transformation                         #
     #############################################################################
@@ -208,11 +216,6 @@ class Chatbot:
         1) extract the relevant information and
         2) transform the information into a response to the user
       """
-      #############################################################################
-      # TODO: Implement the extraction and transformation in this method, possibly#
-      # calling other functions. Although modular code is not graded, it is       #
-      # highly recommended                                                        #
-      #############################################################################
       raw = input
       if input == ':restart':
           self.userVector.clear()
@@ -245,7 +248,12 @@ class Chatbot:
     def turboProcess(self, movies, input,raw):
       response = ''
       if len(self.recommendations) == 0:
+        sentimentScore = self.scoreSentiment(input)
         if len(movies) == 0:
+          tokens = input.split()
+          if 'i' in tokens or 'me' in tokens:
+            if not(sentimentScore < 0.5 and sentimentScore > -0.5):
+              return self.emotionMessage(sentimentScore)
           return self.noMovies(raw)
         if len(movies) > 1:
           return self.moreThanOneMovie()
@@ -255,29 +263,31 @@ class Chatbot:
         if movie not in self.titleIndex:
           for entry in self.titleIndex:
             distance = self.editDistance(movie.lower(), entry)
-            if entry == 'toy story': print distance, entry
             if distance < minDistance:
               minDistance = distance
               spellCorrectedMovie = entry
         if spellCorrectedMovie: movie = spellCorrectedMovie
-        sentimentScore = self.scoreSentiment(input)
+        if movie in self.titleIndex:
+          self.userVector[self.titleIndex[movie]] = sentimentScore
+          movie = self.titles[self.titleIndex[movie]][0]
+        else:
+          return self.movieNotFound() #return don't generate recommendations
         if sentimentScore > 0.5:
           response += self.getPositiveMessage(sentimentScore,movie)
         elif sentimentScore < -0.5:
           response += self.getNegativeMessage(sentimentScore,movie)
         else:
           response += self.getUnknownMessage(movie)
-        if movie in self.titleIndex:
-          self.userVector[self.titleIndex[movie]] = sentimentScore
-        else:
-          return self.movieNotFound() #return don't generate recommendations
-        self.recommendations = self.recommend(self.userVector)
+        if len(self.userVector.keys()) > 0:
+          genre = self.favoriteGenre(self.userVector)
+          response += ' I see that you\'re a fan of %s movies.' % genre
+          self.recommendations = self.recommend(self.userVector)
         if len(self.recommendations) == 0:
           return response + ' Tell me about another movie you have seen.'
       if len(self.recommendations) > 0:
         response += (' That\'s enough for me to make a recommendation.\n'
          'I suggest you watch "%s".\n'
-         'Would you like to hear another recommendation? (Or enter :quit if you\'re done.)') % self.recommendations[0]
+         'Would you like to hear another recommendation? (Enter :quit if you\'re done or :restart to start again.)') % self.recommendations[0]
         del self.recommendations[0]
       return response
 
@@ -290,17 +300,19 @@ class Chatbot:
           return self.moreThanOneMovie()
         movie = self.remove_articles(movies[0])
         sentimentScore = self.scoreSentiment(input)
+        if movie in self.titleIndex:
+          self.userVector[self.titleIndex[movie]] = sentimentScore
+          movie = self.titles[self.titleIndex[movie]][0]
+        else:
+          return self.movieNotFound() #return don't generate recommendations
         if sentimentScore > 0.5:
           response += self.getPositiveMessage(sentimentScore,movie)
         elif sentimentScore < -0.5:
           response += self.getNegativeMessage(sentimentScore,movie)
         else:
           response += self.getUnknownMessage(movie)
-        if movie in self.titleIndex:
-          self.userVector[self.titleIndex[movie]] = sentimentScore
-        else:
-          return self.movieNotFound() #return don't generate recommendations
-        self.recommendations = self.recommend(self.userVector)
+        if len(self.userVector.keys()) > 3:
+          self.recommendations = self.recommend(self.userVector)
         if len(self.recommendations) == 0:
           return response + ' Tell me about another movie you have seen.'
       if len(self.recommendations) > 0:
@@ -319,22 +331,24 @@ class Chatbot:
         i = 0
         bestMatch = ''
         while i < len(tokens):
-          found = False
-          end = len(tokens)
-          while end > i and not found:
-            title = ' '.join(tokens[i:end])
-            if self.remove_articles(title) in self.titleIndex:
-              if len(title) > len(bestMatch):
-                bestMatch = title
-                found = True
-            elif self.remove_articles(title.strip(',.?!;:')) in self.titleIndex:
-              if len(title.strip(',.?!;:')) > len(bestMatch):
-                bestMatch = title.strip(',.?!;:')
-                found = True
-            else:
-              end = end - 1
-          i = end
-          if not found: i = end + 1
+          if tokens[i][0].isupper():
+            found = False
+            end = len(tokens)
+            while end > i and not found:
+              title = ' '.join(tokens[i:end])
+              if self.remove_articles(title) in self.titleIndex:
+                if len(title) > len(bestMatch):
+                  bestMatch = title
+                  found = True
+              elif self.remove_articles(title.strip(',.?!;:')) in self.titleIndex:
+                if len(title.strip(',.?!;:')) > len(bestMatch):
+                  bestMatch = title.strip(',.?!;:')
+                  found = True
+              else:
+                end = end - 1
+            i = end
+            if not found: i = end + 1
+          else: i += 1
         if bestMatch != '': return [bestMatch]
       return []
 
@@ -356,6 +370,21 @@ class Chatbot:
       if total == 0: return 0
       return float(intensity * score) / total
 
+    def favoriteGenre(self, userVector):
+      genreRating = defaultdict(lambda: 0)
+      for (movie, rating) in userVector.items():
+        for genre in self.titles[movie][1].split('|'):
+          genreRating[genre] += rating
+      bestRating = -1
+      bestGenre = 'Horror'
+      for (genre, rating) in genreRating.items():
+        if rating > bestRating:
+          bestGenre = genre
+          bestRating = rating
+      return bestGenre
+
+
+
     def remove_articles(self, title):
       title = title.lower()
       tokens = [w.strip() for w in title.split() if w.strip() != '']
@@ -376,6 +405,8 @@ class Chatbot:
       self.titles, self.ratings = ratings()
       reader = csv.reader(open('data/sentiment.txt', 'rb'))
       self.sentiment = dict(reader)
+      for (word, value) in self.sentiment.items():
+        self.sentiment[self.stemmer.stem(word)] = value
       self.titleIndex = {}
       for i in range(len(self.titles)):
         rawTitle = re.sub(r'(.*) \([0-9]*\)', r'\1', self.titles[i][0]).lower()
@@ -471,13 +502,14 @@ class Chatbot:
       following creative additions.
         1. Identifying movies without quotation marks or perfect capitalization
         2. Fine-grained sentiment extraction
-        3. Spell-checking movie titles -4 pts
+        3. Spell-checking movie titles
         4. Using non-binarized datasets
         5. Speaking very fluently
         6. Responding to emotion
         7. Responding to arbitrary input
         8. Custom Additions
           Enter :restart to erase your sentiment history!
+          Turbo mode identifies the user's favorite genre
       """
 
 
