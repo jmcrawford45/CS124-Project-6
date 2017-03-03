@@ -15,6 +15,7 @@ import re
 from movielens import ratings
 from random import randint
 from PorterStemmer import PorterStemmer
+from collections import defaultdict
 
 class Chatbot:
     """Simple class to implement the chatbot for PA 6."""
@@ -48,11 +49,10 @@ class Chatbot:
 
     def greeting(self):
       """chatbot greeting message"""
-      #############################################################################
-      # TODO: Write a short greeting message                                      #
-      #############################################################################
 
-      greeting_message = 'It was nice talking with you. Goodbye!'
+      greeting_message = """Hi! I'm ChatbotAndChill! I'm going to recommend a movie to you.
+First I will ask you about your taste in movies.
+Tell me about a movie that you have seen."""
 
       #############################################################################
       #                             END OF YOUR CODE                              #
@@ -62,11 +62,9 @@ class Chatbot:
 
     def goodbye(self):
       """chatbot goodbye message"""
-      #############################################################################
-      # TODO: Write a short farewell message                                      #
-      #############################################################################
 
-      goodbye_message = 'Have a nice day!'
+
+      goodbye_message = 'It was nice talking with you. Goodbye!'
 
       #############################################################################
       #                             END OF YOUR CODE                              #
@@ -132,11 +130,6 @@ class Chatbot:
         1) extract the relevant information and
         2) transform the information into a response to the user
       """
-      #############################################################################
-      # TODO: Implement the extraction and transformation in this method, possibly#
-      # calling other functions. Although modular code is not graded, it is       #
-      # highly recommended                                                        #
-      #############################################################################
       if input == ':restart':
           self.userVector.clear()
           del self.recommendations[:]
@@ -187,23 +180,27 @@ class Chatbot:
               minDistance = distance
               spellCorrectedMovie = entry
         if spellCorrectedMovie: movie = spellCorrectedMovie
+        if movie in self.titleIndex:
+          self.userVector[self.titleIndex[movie]] = sentimentScore
+          movie = self.titles[self.titleIndex[movie]][0]
+        else:
+          return self.movieNotFound() #return don't generate recommendations
         if sentimentScore > 0.5:
           response += self.getPositiveMessage(sentimentScore,movie)
         elif sentimentScore < -0.5:
           response += self.getNegativeMessage(sentimentScore,movie)
         else:
           response += self.getUnknownMessage(movie)
-        if movie in self.titleIndex:
-          self.userVector[self.titleIndex[movie]] = sentimentScore
-        else:
-          return self.movieNotFound() #return don't generate recommendations
-        self.recommendations = self.recommend(self.userVector)
+        if len(self.userVector.keys()) > 0:
+          genre = self.favoriteGenre(self.userVector)
+          response += ' I see that you\'re a fan of %s movies.' % genre
+          self.recommendations = self.recommend(self.userVector)
         if len(self.recommendations) == 0:
           return response + ' Tell me about another movie you have seen.'
       if len(self.recommendations) > 0:
         response += (' That\'s enough for me to make a recommendation.\n'
          'I suggest you watch "%s".\n'
-         'Would you like to hear another recommendation? (Or enter :quit if you\'re done.)') % self.recommendations[0]
+         'Would you like to hear another recommendation? (Enter :quit if you\'re done or :restart to start again.)') % self.recommendations[0]
         del self.recommendations[0]
       return response
 
@@ -216,17 +213,19 @@ class Chatbot:
           return self.moreThanOneMovie()
         movie = self.remove_articles(movies[0])
         sentimentScore = self.scoreSentiment(input)
+        if movie in self.titleIndex:
+          self.userVector[self.titleIndex[movie]] = sentimentScore
+          movie = self.titles[self.titleIndex[movie]][0]
+        else:
+          return self.movieNotFound() #return don't generate recommendations
         if sentimentScore > 0.5:
           response += self.getPositiveMessage(sentimentScore,movie)
         elif sentimentScore < -0.5:
           response += self.getNegativeMessage(sentimentScore,movie)
         else:
           response += self.getUnknownMessage(movie)
-        if movie in self.titleIndex:
-          self.userVector[self.titleIndex[movie]] = sentimentScore
-        else:
-          return self.movieNotFound() #return don't generate recommendations
-        self.recommendations = self.recommend(self.userVector)
+        if len(self.userVector.keys()) > 3:
+          self.recommendations = self.recommend(self.userVector)
         if len(self.recommendations) == 0:
           return response + ' Tell me about another movie you have seen.'
       if len(self.recommendations) > 0:
@@ -283,6 +282,21 @@ class Chatbot:
           else: score -= 1 * negate
       if total == 0: return 0
       return float(intensity * score) / total
+
+    def favoriteGenre(self, userVector):
+      genreRating = defaultdict(lambda: 0)
+      for (movie, rating) in userVector.items():
+        for genre in self.titles[movie][1].split('|'):
+          genreRating[genre] += rating
+      bestRating = -1
+      bestGenre = 'Horror'
+      for (genre, rating) in genreRating.items():
+        if rating > bestRating:
+          bestGenre = genre
+          bestRating = rating
+      return bestGenre
+
+
 
     def remove_articles(self, title):
       title = title.lower()
@@ -408,6 +422,7 @@ class Chatbot:
         7. Responding to arbitrary input
         8. Custom Additions
           Enter :restart to erase your sentiment history!
+          Turbo mode identifies the user's favorite genre
       """
 
 
