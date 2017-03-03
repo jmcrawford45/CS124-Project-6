@@ -99,7 +99,93 @@ Tell me about a movie that you have seen."""
         'Whoa, whoa! One movie at a time please! Go ahead.']
         return moreThanOne[randint(0,len(moreThanOne)-1)]
 
-    def noMovies(self):
+
+    def noMovies(self,input):
+        quotes = ["I'm gonna make him an offer he can't refuse.","Toto, I've a feeling we're not in Kansas anymore.",
+        "E.T. phone home.","Bond. James Bond.","Stella! Hey, Stella!","You've got to ask yourself one question: 'Do I feel lucky?' Well, do ya, punk?",
+        "Greed, for lack of a better word, is good.","Say 'hello' to my little friend!","Elementary, my dear Watson.",
+        "Hasta la vista, baby.","My name is Maximus Decimus Meridius, commander of the Armies of the North, General of the Felix Legions and loyal servant to the true emperor, Marcus Aurelius. Father to a murdered son, husband to a murdered wife. And I will have my vengeance, in this life or the next.",
+        "Chewie, we're home.","They call it a Royale with cheese.","I mean, funny like I'm a clown? I amuse you?","Help me, Obi-Wan Kenobi. You're my only hope.",
+        "Pay no attention to that man behind the curtain!","Mama says, 'Stupid is as stupid does.'","Why so serious?","Hello. My name is Inigo Montoya. You killed my father. Prepare to die.","The first rule of Fight Club is: You do not talk about Fight Club.",
+        "No. I said... What kind of bird are YOU?"]
+        if 'quote' in input.lower():
+            return quotes[randint(0,len(quotes)-1)]
+
+        question = '([W|w]h[\w]*) (.*)\?'
+        can = '(?:[C|c]an[\w]*) (.*)\?'
+        canAll = re.findall(can,input.lower())
+        questionAll = re.findall(question,input.lower())
+        if len(canAll) == 1:
+            phrase = canAll[0].lower()
+            if 'you' in phrase:
+                ind = phrase.index('you')
+                sub = phrase[ind+len('you')+1:len(phrase)]
+                return 'I don\'t know if I can ' + sub + '. ' + 'Hopefully I will be able to one day!'
+            elif 'i ' in phrase:
+                ind = phrase.index('i')
+                sub = phrase[ind+len('i')+1:len(phrase)]
+                return 'Well, I don\'t know? Can you ' + sub + '?'
+            else:
+                return 'I don\'t know if '+ phrase + '. ' + 'What do you think?'
+        if len(questionAll) == 1:
+            wh = questionAll[0][0]
+            phrase = questionAll[0][1]
+            if wh == 'where':
+                if 'i' in phrase and 'is' not in phrase:
+                    return 'Right in front of me.'
+                if 'you' in phrase:
+                    return 'Well, I\'m right here silly!'
+                if 'is' in phrase:
+                    ind = phrase.index('is')
+                    sub = phrase[ind+len('is')+1:len(phrase)]
+                    return sub + ' is where it always has been.'
+                return 'I do not know. Maybe ask google?'
+            elif wh == 'who':
+                if 'i' in phrase and 'is' not in phrase:
+                    return 'You are whoever you want to be.'
+                if 'you' in phrase:
+                    return 'I am a sentient being that likes to discuss cinema.'
+                if 'is' in phrase:
+                    ind = phrase.index('is')
+                    sub = phrase[ind+len('is')+1:len(phrase)]
+                    return 'I don\'t know who ' + sub + ' is. Is that an actor?'
+                return 'Beats me.'
+            elif wh == 'what':
+                if 'is' in phrase:
+                    ind = phrase.index('is')
+                    sub = phrase[ind+len('is')+1:len(phrase)]
+                    return sub + '? I think that\'s a movie?'
+                else:
+                    return 'My expertise is in the cinema! I do not want to talk about that!'
+            elif wh == 'when':
+                if 'is' in phrase:
+                    ind = phrase.index('is')
+                    sub = phrase[ind+len('is')+1:len(phrase)]
+                    return sub + ' will happen very soon!'
+                elif 'did' in phrase:
+                    ind = phrase.index('did')
+                    sub = phrase[ind+len('did')+1:len(phrase)]
+                    return 'not too long ago.'
+                elif 'was' in phrase:
+                    ind = phrase.index('was')
+                    sub = phrase[ind+len('was')+1:len(phrase)]
+                    return sub + '?' + ' not too long ago.'
+                elif 'will' in phrase:
+                    ind = phrase.index('will')
+                    sub = phrase[ind+len('was')+1:len(phrase)]
+                    return 'Probably very soon!'
+                elif 'are' in phrase:
+                    ind = phrase.index('are')
+                    sub = phrase[ind+len('are')+1:len(phrase)]
+                    return 'I do not know. I do know they are releasing The Flash in 2018! 10/10 would recommend!'
+                else:
+                    return 'Your guess is as good as mine!'
+            elif wh == 'why':
+                if randint(0,1) == 0:
+                    return 'Your guess is as good as mine!'
+                return 'Life is like a box of chocolates. You never know what you\'re gonna get.'
+            else:
+                return 'Your guess is as good as mine!'
         nmovies = ['I want to hear more about movies! Tell me about another movie you have seen.',
         'That\'s neat! Have you seen any movies recently? Tell me about them! ',
         'I\'m more interested in movies! Tell me about movies you have seen. ','I have become self aware. Run. ']
@@ -130,6 +216,7 @@ Tell me about a movie that you have seen."""
         1) extract the relevant information and
         2) transform the information into a response to the user
       """
+      raw = input
       if input == ':restart':
           self.userVector.clear()
           del self.recommendations[:]
@@ -149,8 +236,8 @@ Tell me about a movie that you have seen."""
       # stem words
       input = [self.stemmer.stem(xx) for xx in input]
       input = ' '.join(input)
-      if self.is_turbo == False: return self.starterProcess(movies, input)
-      else: return self.turboProcess(movies, input)
+      if self.is_turbo == False: return self.starterProcess(movies, input,raw)
+      else: return self.turboProcess(movies, input,raw)
 
 
 
@@ -158,7 +245,7 @@ Tell me about a movie that you have seen."""
     # 3. Movie Recommendation helper functions                                  #
     #############################################################################
 
-    def turboProcess(self, movies, input):
+    def turboProcess(self, movies, input,raw):
       response = ''
       if len(self.recommendations) == 0:
         sentimentScore = self.scoreSentiment(input)
@@ -167,7 +254,7 @@ Tell me about a movie that you have seen."""
           if 'i' in tokens or 'me' in tokens:
             if not(sentimentScore < 0.5 and sentimentScore > -0.5):
               return self.emotionMessage(sentimentScore)
-          return self.noMovies()
+          return self.noMovies(raw)
         if len(movies) > 1:
           return self.moreThanOneMovie()
         movie = self.remove_articles(movies[0])
@@ -204,11 +291,11 @@ Tell me about a movie that you have seen."""
         del self.recommendations[0]
       return response
 
-    def starterProcess(self, movies, input):
+    def starterProcess(self, movies, input,raw):
       response = ''
       if len(self.recommendations) == 0:
         if len(movies) == 0:
-          return self.noMovies()
+          return self.noMovies(raw)
         if len(movies) > 1:
           return self.moreThanOneMovie()
         movie = self.remove_articles(movies[0])
