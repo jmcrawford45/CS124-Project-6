@@ -401,7 +401,7 @@ class Chatbot:
       following creative additions.
         1. Identifying movies without quotation marks or perfect capitalization
         2. Fine-grained sentiment extraction
-        3. Spell-checking movie titles -4 pts
+        3. Spell-checking movie titles
         4. Using non-binarized datasets
         5. Speaking very fluently
         6. Responding to emotion
