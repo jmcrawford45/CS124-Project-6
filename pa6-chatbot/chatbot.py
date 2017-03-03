@@ -101,6 +101,7 @@ class Chatbot:
         'Whoa, whoa! One movie at a time please! Go ahead.']
         return moreThanOne[randint(0,len(moreThanOne)-1)]
 
+
     def noMovies(self,input):
         quotes = ["I'm gonna make him an offer he can't refuse.","Toto, I've a feeling we're not in Kansas anymore.",
         "E.T. phone home.","Bond. James Bond.","Stella! Hey, Stella!","You've got to ask yourself one question: 'Do I feel lucky?' Well, do ya, punk?",
@@ -128,8 +129,6 @@ class Chatbot:
                 return 'Well, I don\'t know? Can you ' + sub + '?'
             else:
                 return 'I don\'t know if '+ phrase + '. ' + 'What do you think?'
-
-        #print questionAll
         if len(questionAll) == 1:
             wh = questionAll[0][0]
             phrase = questionAll[0][1]
@@ -161,7 +160,7 @@ class Chatbot:
                 else:
                     return 'My expertise is in the cinema! I do not want to talk about that!'
             elif wh == 'when':
-                if 'is' in phrase: #did was will are
+                if 'is' in phrase:
                     ind = phrase.index('is')
                     sub = phrase[ind+len('is')+1:len(phrase)]
                     return sub + ' will happen very soon!'
@@ -189,10 +188,6 @@ class Chatbot:
                 return 'Life is like a box of chocolates. You never know what you\'re gonna get.'
             else:
                 return 'Your guess is as good as mine!'
-
-            #print 'wh is ', whWord, rest
-            #print 'yas slay'
-
         nmovies = ['I want to hear more about movies! Tell me about another movie you have seen.',
         'That\'s neat! Have you seen any movies recently? Tell me about them! ',
         'I\'m more interested in movies! Tell me about movies you have seen. ','I have become self aware. Run. ']
