@@ -186,6 +186,7 @@ Tell me about a movie that you have seen."""
                 return 'Life is like a box of chocolates. You never know what you\'re gonna get.'
             else:
                 return 'Your guess is as good as mine!'
+
         nmovies = ['I want to hear more about movies! Tell me about another movie you have seen.',
         'That\'s neat! Have you seen any movies recently? Tell me about them! ',
         'I\'m more interested in movies! Tell me about movies you have seen. ','I have become self aware. Run. ']
@@ -250,10 +251,11 @@ Tell me about a movie that you have seen."""
       if len(self.recommendations) == 0:
         sentimentScore = self.scoreSentiment(input)
         if len(movies) == 0:
-          tokens = input.split()
-          if 'i' in tokens or 'me' in tokens:
-            if not(sentimentScore < 0.5 and sentimentScore > -0.5):
-              return self.emotionMessage(sentimentScore)
+          if not raw.strip().endswith('?'):
+            tokens = input.split()
+            if 'i' in tokens or 'me' in tokens:
+              if not(sentimentScore < 0.5 and sentimentScore > -0.5):
+                return self.emotionMessage(sentimentScore)
           return self.noMovies(raw)
         if len(movies) > 1:
           return self.moreThanOneMovie()
